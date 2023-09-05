@@ -45,8 +45,7 @@ class SetUserVariablesHandler : ICommandHandler {
         client.PlayerData.J = suvData.Get<string>("J");
         client.PlayerData.Bu = suvData.Get<string>("BU");
         client.PlayerData.Fp = suvData.Get<string>("FP");
-        client.PlayerData.Id = client.Room.NextPlayerId();
-        Console.WriteLine($"SUV {client.Room.Name} IID: {client.internalId}");
+        Console.WriteLine($"SUV {client.Room.Name} IID: {client.ClientID}");
         client.Room.AddClient(client);
         UpdatePlayersInRoom();
         SendSUVToPlayerInRoom();
@@ -61,7 +60,7 @@ class SetUserVariablesHandler : ICommandHandler {
         }
         NetworkObject data = new();
         NetworkObject data2 = new();
-        data.Add("u", client.PlayerData.Id);
+        data.Add("u", client.ClientID);
 
         NetworkArray vl = new();
         if (FP != null) {
@@ -83,20 +82,18 @@ class SetUserVariablesHandler : ICommandHandler {
 
         NetworkPacket packet = NetworkObject.WrapObject(0, 12, data).Serialize();
         lock (client.Room.roomLock) {
-            foreach (var roomClient in client.Room.Clients) {
-                if (roomClient != client)
-                    roomClient.Send(packet);
-            }
+            foreach (var roomClient in client.Room.Clients)
+                roomClient.Send(packet);
         }
 
         NetworkObject cmd = new();
         cmd.Add("c", "SUV");
 
         NetworkObject container = new();
-        
+
         NetworkArray arr = new();
         data2.Add("RID", "1");
-        data2.Add("MID", client.PlayerData.Id);
+        data2.Add("MID", client.ClientID);
         arr.Add(data2);
         container.Add("arr", arr);
         cmd.Add("p", container);
@@ -109,13 +106,14 @@ class SetUserVariablesHandler : ICommandHandler {
 
     private void UpdatePlayersInRoom() {
         NetworkObject data = new();
+        NetworkObject acknowledgement = new();
         data.Add("r", client.Room.Id);
 
         NetworkArray user = new();
-        user.Add(client.PlayerData.Id);
+        user.Add(client.ClientID);
         user.Add(client.PlayerData.Uid);
         user.Add((short)1);
-        user.Add((short)client.PlayerData.Id);
+        user.Add((short)client.ClientID);
 
         NetworkArray playerData = new();
         playerData.Add(NetworkArray.DoubleParam("R1", client.PlayerData.R1));
@@ -144,6 +142,14 @@ class SetUserVariablesHandler : ICommandHandler {
 
         user.Add(playerData);
         data.Add("u", user);
+
+        acknowledgement.Add("u", client.ClientID);
+        acknowledgement.Add("vl", playerData);
+        NetworkPacket ackPacket = NetworkObject.WrapObject(0, 12, acknowledgement).Serialize();
+        NetworkObject obj = ackPacket.GetObject();
+        ackPacket.Compress();
+        client.Send(ackPacket);
+
         NetworkPacket packet = NetworkObject.WrapObject(0, 1000, data).Serialize();
         packet.Compress();
 
@@ -158,7 +164,7 @@ class SetUserVariablesHandler : ICommandHandler {
         NetworkObject obj = new();
 
         cmd.Add("c", "SUV");
-        obj.Add("MID", client.PlayerData.Id);
+        obj.Add("MID", client.ClientID);
         cmd.Add("p", obj);
 
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();

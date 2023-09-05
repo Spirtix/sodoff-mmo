@@ -1,6 +1,7 @@
-﻿namespace sodoffmmo.Data;
+﻿using sodoffmmo.Core;
+
+namespace sodoffmmo.Data;
 public class PlayerData {
-    public int Id { get; set; } = -1;
     public double R { get; set; }
     public double R1 { get; set; }
     public double R2 { get; set; }
@@ -25,13 +26,14 @@ public class PlayerData {
     public string Cu { get; set; } = "-1";
     public string M { get; set; } = "False";
     public string L { get; set; } = "";
+    public string UNToken { get; set; } = "";
 
-    public NetworkArray GetNetworkData() {
+    public NetworkArray GetNetworkData(int clientID) {
         NetworkArray arr = new();
-        arr.Add(Id);
+        arr.Add(clientID);
         arr.Add(Uid);
         arr.Add((short)1);
-        arr.Add((short)Id);
+        arr.Add((short)clientID);
 
         NetworkArray paramArr = new();
         paramArr.Add(NetworkArray.DoubleParam("R1", R1));

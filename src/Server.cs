@@ -53,7 +53,7 @@ public class Server {
             try {
                 client.LeaveRoom();
             } catch (Exception) { }
-            Console.WriteLine("Socket disconnected IID: " + client.internalId);
+            Console.WriteLine("Socket disconnected IID: " + client.ClientID);
         }
     }
 
@@ -63,14 +63,14 @@ public class Server {
                 short commandId = obj.Get<short>("a");
                 ICommandHandler handler;
                 if (commandId != 13) {
-                    Console.WriteLine($"System command: {commandId} IID: {client.internalId}");
+                    Console.WriteLine($"System command: {commandId} IID: {client.ClientID}");
                     handler = moduleManager.GetCommandHandler(commandId);
                 } else
                     handler = moduleManager.GetCommandHandler(obj.Get<NetworkObject>("p").Get<string>("c"));
                 handler.Handle(client, obj.Get<NetworkObject>("p"));
             } catch (Exception ex) {
                 if (!ex.Message.Contains("ID 7")) // Missing command 7 flooding the log
-                    Console.WriteLine($"Exception IID: {client.internalId} - {ex}");
+                    Console.WriteLine($"Exception IID: {client.ClientID} - {ex}");
             }
         }
     }

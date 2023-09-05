@@ -43,7 +43,7 @@ class SetPositionVariablesHandler : ICommandHandler {
         vars.Add("MBF", client.PlayerData.Mbf);
         vars.Add("R", client.PlayerData.R);
         vars.Add("U", new float[] { (float)client.PlayerData.P1, (float)client.PlayerData.P2, (float)client.PlayerData.P3, (float)client.PlayerData.R1, (float)client.PlayerData.R2, (float)client.PlayerData.R3 });
-        vars.Add("MID", client.PlayerData.Id);
+        vars.Add("MID", client.ClientID);
 
         container.Add(vars);
         obj.Add("arr", container);

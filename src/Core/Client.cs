@@ -5,10 +5,12 @@ using System.Net.Sockets;
 namespace sodoffmmo.Core;
 public class Client {
     static int id;
-    static object lck = new(); // For debugging purposes
-    public int internalId; // ---
+    static object lck = new();
+
+    public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
     public Room Room { get; set; }
+    public object ClientLock = new();
 
     private readonly Socket socket;
     private NetworkData? lastData;
@@ -18,7 +20,7 @@ public class Client {
     public Client(Socket clientSocket) {
         socket = clientSocket;
         lock (lck) {
-            internalId = ++id;
+            ClientID = ++id;
         }
     }
 
@@ -50,11 +52,11 @@ public class Client {
 
     public void LeaveRoom() {
         if (Room != null) {
-            Console.WriteLine($"Leave room {Room.Name} IID: {internalId}");
+            Console.WriteLine($"Leave room {Room.Name} IID: {ClientID}");
             Room.RemoveClient(this);
             NetworkObject data = new();
             data.Add("r", Room.Id);
-            data.Add("u", PlayerData.Id);
+            data.Add("u", ClientID);
 
             NetworkPacket packet = NetworkObject.WrapObject(0, 1004, data).Serialize();
             foreach (var roomClient in Room.Clients) {

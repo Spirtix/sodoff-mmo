@@ -17,7 +17,7 @@ class JoinRoomHandler : ICommandHandler
         if (!Room.Exists(roomName))
             Room.Add(roomName);
         room = Room.Get(roomName);
-        Console.WriteLine($"Join Room: {roomName} RoomID: {room.Id} IID: {client.internalId}");
+        Console.WriteLine($"Join Room: {roomName} RoomID: {room.Id} IID: {client.ClientID}");
         this.client = client;
 
         RespondJoinRoom();
@@ -43,7 +43,7 @@ class JoinRoomHandler : ICommandHandler
 
         NetworkArray userList = new();
         foreach (Client player in room.Clients) {
-            userList.Add(player.PlayerData.GetNetworkData());
+            userList.Add(player.PlayerData.GetNetworkData(player.ClientID));
         }
 
         obj.Add("r", roomInfo);
@@ -97,7 +97,7 @@ class JoinRoomHandler : ICommandHandler
             NetworkObject cmd = new();
             NetworkObject obj = new();
             cmd.Add("c", "SUV");
-            obj.Add("MID", c.PlayerData.Id);
+            obj.Add("MID", c.ClientID);
             cmd.Add("p", obj);
             client.Send(NetworkObject.WrapObject(1, 13, cmd).Serialize());
         }

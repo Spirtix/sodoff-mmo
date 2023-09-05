@@ -9,6 +9,7 @@ class LoginHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject)
     {
+        client.PlayerData.UNToken = receivedObject.Get<string>("un");
         NetworkArray rl = new();
 
         NetworkArray r1 = new();
@@ -54,8 +55,8 @@ class LoginHandler : ICommandHandler
         content.Add("rl", rl);
         content.Add("zn", "JumpStart");
         content.Add("rs", (short)5);
-        content.Add("un", "005fd387-c264-410f-acf3-dbe3a06aaffa");
-        content.Add("id", 1143760);
+        content.Add("un", client.PlayerData.UNToken);
+        content.Add("id", client.ClientID);
         content.Add("pi", (short)1);
 
         client.Send(NetworkObject.WrapObject(0, 1, content).Serialize());
