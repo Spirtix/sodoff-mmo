@@ -17,7 +17,11 @@ public class Room {
 
     public IEnumerable<Client> Clients {
         get {
-                return new List<Client>(clients);
+            List<Client> list;
+            lock (roomLock) {
+                list = new List<Client>(clients);
+            }
+            return list;
         }
     }
 

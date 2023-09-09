@@ -10,12 +10,10 @@ public class Client {
     public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
     public Room Room { get; set; }
-    public object ClientLock = new();
 
     private readonly Socket socket;
-    private NetworkData? lastData;
-    private NetworkPacket? incompleteData;
-    private bool hasIncompletePakcet = false;
+    SocketBuffer socketBuffer = new();
+    private volatile bool scheduledDisconnect = false;
 
     public Client(Socket clientSocket) {
         socket = clientSocket;
@@ -29,21 +27,11 @@ public class Client {
         int len = await socket.ReceiveAsync(buffer, SocketFlags.None);
         if (len == 0)
             throw new SocketException();
-        lastData = new NetworkData(buffer);
+        socketBuffer.Write(buffer, len);
     }
 
     public bool TryGetNextPacket(out NetworkPacket packet) {
-        packet = new();
-        if (hasIncompletePakcet) {
-            // TODO
-        }
-        byte header = lastData!.ReadByte();
-        if (header != 0x80 && header != 0xa0)
-            return false;
-        short length = lastData.ReadShort();
-        byte[] data = lastData.ReadChunk(length);
-        packet = new NetworkPacket(header, data);
-        return true;
+        return socketBuffer.ReadPacket(out packet);
     }
 
     public void Send(NetworkPacket packet) {
@@ -78,9 +66,13 @@ public class Client {
         }
     }
 
+    public void SheduleDisconnect() {
+        scheduledDisconnect = true;
+    }
+
     public bool Connected {
         get {
-            return socket.Connected;
+            return socket.Connected && !scheduledDisconnect;
         }
     }
 }

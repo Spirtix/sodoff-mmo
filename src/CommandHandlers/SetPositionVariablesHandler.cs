@@ -9,6 +9,12 @@ class SetPositionVariablesHandler : ICommandHandler {
     Client client;
     NetworkObject spvData;
     public void Handle(Client client, NetworkObject receivedObject) {
+        if (client.Room == null) {
+            Console.WriteLine($"SPV Missing Room IID: {client.ClientID}");
+            client.Send(NetworkObject.WrapObject(0, 1006, new NetworkObject()).Serialize());
+            client.SheduleDisconnect();
+            return;
+        }
         this.client = client;
         spvData = receivedObject;
         UpdatePositionVariables();
@@ -52,11 +58,9 @@ class SetPositionVariablesHandler : ICommandHandler {
 
 
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
-        lock (client.Room.roomLock) {
-            foreach (var roomClient in client.Room.Clients) {
-                if (roomClient != client)
-                    roomClient.Send(packet);
-            }
+        foreach (var roomClient in client.Room.Clients) {
+            if (roomClient != client)
+                roomClient.Send(packet);
         }
     }
 }

@@ -47,12 +47,11 @@ public class Server {
 
                 _ = Task.Run(() => HandleObjects(networkObjects, client));
             }
-        } catch (SocketException) {
-            client.Disconnect();
         } finally {
             try {
                 client.LeaveRoom();
             } catch (Exception) { }
+            client.Disconnect();
             Console.WriteLine("Socket disconnected IID: " + client.ClientID);
         }
     }

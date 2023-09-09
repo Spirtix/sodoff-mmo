@@ -81,10 +81,8 @@ class SetUserVariablesHandler : ICommandHandler {
         data.Add("vl", vl);
 
         NetworkPacket packet = NetworkObject.WrapObject(0, 12, data).Serialize();
-        lock (client.Room.roomLock) {
-            foreach (var roomClient in client.Room.Clients)
-                roomClient.Send(packet);
-        }
+        foreach (var roomClient in client.Room.Clients)
+            roomClient.Send(packet);
 
         NetworkObject cmd = new();
         cmd.Add("c", "SUV");

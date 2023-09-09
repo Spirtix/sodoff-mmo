@@ -33,12 +33,14 @@ public class NetworkPacket {
             header = 0xa0;
             this.compressed = true;
         }
-        this.data = data.Data;
+        this.data = new byte[data.Data.Length];
+        Buffer.BlockCopy(data.Data, 0, this.data, 0, data.Data.Length);
     }
 
     public NetworkPacket(byte header, byte[] data) {
         this.header = header;
-        this.data = data;
+        this.data = new byte[data.Length];
+        Buffer.BlockCopy(data, 0, this.data, 0, data.Length);
         if (header == 0xa0)
             compressed = true;
     }

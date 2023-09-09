@@ -17,6 +17,12 @@ public class NetworkData {
         this.data = data;
     }
 
+    public int RemainingLength {
+        get {
+            return data.Length - offset;
+        }
+    }
+
     public void Seek(int offset) {
         int newOffset = this.offset + offset;
         if (newOffset >= 0 && newOffset < data.Length)
