@@ -35,7 +35,12 @@ public class Client {
     }
 
     public void Send(NetworkPacket packet) {
-        socket.Send(packet.SendData);
+        try {
+            socket.Send(packet.SendData);
+        } catch (SocketException) {
+            LeaveRoom();
+            SheduleDisconnect();
+        }
     }
 
     public void LeaveRoom() {

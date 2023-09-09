@@ -31,8 +31,9 @@ public class Server {
         listener.Listen(100);
         while (true) {
             Socket handler = await listener.AcceptAsync();
+            handler.SendTimeout = 200;
             Console.WriteLine($"New connection from {((IPEndPoint)handler.RemoteEndPoint!).Address}");
-            _ = HandleClient(handler);
+            _ = Task.Run(() => HandleClient(handler));
         }
     }
 
@@ -45,7 +46,7 @@ public class Server {
                 while (client.TryGetNextPacket(out NetworkPacket packet))
                     networkObjects.Add(packet.GetObject());
 
-                _ = Task.Run(() => HandleObjects(networkObjects, client));
+                HandleObjects(networkObjects, client);
             }
         } finally {
             try {
@@ -62,14 +63,14 @@ public class Server {
                 short commandId = obj.Get<short>("a");
                 ICommandHandler handler;
                 if (commandId != 13) {
-                    Console.WriteLine($"System command: {commandId} IID: {client.ClientID}");
+                    if (commandId == 0 || commandId == 1)
+                        Console.WriteLine($"System command: {commandId} IID: {client.ClientID}");
                     handler = moduleManager.GetCommandHandler(commandId);
                 } else
                     handler = moduleManager.GetCommandHandler(obj.Get<NetworkObject>("p").Get<string>("c"));
                 handler.Handle(client, obj.Get<NetworkObject>("p"));
             } catch (Exception ex) {
-                if (!ex.Message.Contains("ID 7")) // Missing command 7 flooding the log
-                    Console.WriteLine($"Exception IID: {client.ClientID} - {ex}");
+                Console.WriteLine($"Exception IID: {client.ClientID} - {ex}");
             }
         }
     }
