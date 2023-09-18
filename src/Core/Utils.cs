@@ -9,8 +9,7 @@ namespace sodoffmmo.Core;
 internal static class Utils {
     public static bool VariablesValid(Client client) {
         if (client.PlayerData.Fp != "" && (client.PlayerData.Mbf & 8) == 8
-            && (client.PlayerData.GeometryType == PetGeometryType.Default && client.PlayerData.PetAge < PetAge.Adult
-                || client.PlayerData.GeometryType == PetGeometryType.NightLight && client.PlayerData.PetAge < PetAge.Teen
+            && (client.PlayerData.GeometryType == PetGeometryType.Default && client.PlayerData.PetAge < PetAge.Teen
                 || client.PlayerData.GeometryType == PetGeometryType.Terror && client.PlayerData.PetAge < PetAge.Titan)) {
                         NetworkObject obj = new NetworkObject();
                         obj.Add("dr", (byte)1);

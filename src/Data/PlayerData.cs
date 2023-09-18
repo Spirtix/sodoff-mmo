@@ -43,12 +43,9 @@ public class PlayerData {
             }
             GeometryType = PetGeometryType.Default;
             PetAge = PetAge.Adult;
-            if (keyValPairs.TryGetValue("G", out string geometry)) {
-                if (geometry.ToLower().Contains("nightlight"))
-                    GeometryType = PetGeometryType.NightLight;
-                else if (geometry.ToLower().Contains("terribleterror"))
+            if (keyValPairs.TryGetValue("G", out string geometry))
+                if (geometry.ToLower().Contains("terribleterror"))
                     GeometryType = PetGeometryType.Terror;
-            }
             if (keyValPairs.TryGetValue("A", out string age)) {
                 switch (age) {
                     case "E": PetAge = PetAge.EggInHand; break;
@@ -102,7 +99,6 @@ public class PlayerData {
 
 public enum PetGeometryType {
     Default,
-    NightLight,
     Terror
 }
 public enum PetAge {
