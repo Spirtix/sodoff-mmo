@@ -2,32 +2,58 @@
 
 namespace sodoffmmo.Data;
 public class PlayerData {
+    // rotation (eulerAngles.y)
     public double R { get; set; }
+    // velocity x
     public double R1 { get; set; }
+    // velocity y
     public double R2 { get; set; }
+    // velocity z
     public double R3 { get; set; }
+    // max speed
     public double Mx { get; set; } = 6;
+    // UDT points
     public string Udt { get; set; } = "";
+    // position x
     public double P1 { get; set; }
+    // position y
     public double P2 { get; set; }
+    // position z
     public double P3 { get; set; }
 
+    // network time
     public string Nt { get; set; } = "1.0";
+    // timestamp
     public int T { get; set; } = 0;
+    // join (?)
     public string J { get; set; } = "2";
+    // flags (?)
     public int F { get; set; }
+    // animation bitfield (animations used by avatar, e.g. mounted, swim, ...)
     public int Mbf { get; set; }
+    // busy (?)
     public string Bu { get; set; } = "False";
+    // viking uid
     public string Uid { get; set; } = "";
+    // (not raised) pet data
     public string Pu { get; set; } = "";
+    // avatar data
     public string A { get; set; } = "";
+    // XP rank (points and level)
     public string Ra { get; set; } = "";
+    // country info (for flag?)
     public string Cu { get; set; } = "-1";
+    // membership status
     public string M { get; set; } = "False";
+    // location (level)
     public string L { get; set; } = "";
+    // client token
     public string UNToken { get; set; } = "";
+    // raised pet geometry - set from Fp
     public PetGeometryType GeometryType { get; set; } = PetGeometryType.Default;
+    // raised pet age - set from Fp
     public PetAge PetAge { get; set; } = PetAge.Adult;
+    // raised pet data
     public string Fp {
         get {
             return fp;
