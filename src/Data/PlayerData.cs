@@ -53,6 +53,8 @@ public class PlayerData {
     public PetGeometryType GeometryType { get; set; } = PetGeometryType.Default;
     // raised pet age - set from Fp
     public PetAge PetAge { get; set; } = PetAge.Adult;
+    // raised pet mounted - set from Fp
+    public bool PetMounted { get; set; } = false;
     // raised pet data
     public string Fp {
         get {
@@ -81,6 +83,9 @@ public class PlayerData {
                     case "A": PetAge = PetAge.Adult;     break;
                     case "Ti": PetAge = PetAge.Titan;    break;
                 }
+            }
+            if (keyValPairs.TryGetValue("U", out string userdata)) {
+                PetMounted = (userdata == "0");
             }
         }
     }
