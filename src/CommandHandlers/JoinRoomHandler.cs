@@ -14,9 +14,7 @@ class JoinRoomHandler : ICommandHandler
         string roomName = receivedObject.Get<NetworkObject>("p").Get<string>("rn");
         client.LeaveRoom();
         client.InvalidatePlayerData();
-        if (!Room.Exists(roomName))
-            Room.Add(roomName);
-        room = Room.Get(roomName);
+        room = Room.GetOrAdd(roomName);
         Console.WriteLine($"Join Room: {roomName} RoomID: {room.Id} IID: {client.ClientID}");
         this.client = client;
 
