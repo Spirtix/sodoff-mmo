@@ -46,9 +46,6 @@ class SetUserVariablesHandler : ICommandHandler {
         client.PlayerData.Bu = suvData.Get<string>("BU");
         client.PlayerData.Fp = suvData.Get<string>("FP");
 
-        if (!Utils.VariablesValid(client))
-            return;
-
         Console.WriteLine($"SUV {client.Room.Name} IID: {client.ClientID}");
         client.Room.AddClient(client);
         UpdatePlayersInRoom();
@@ -82,9 +79,6 @@ class SetUserVariablesHandler : ICommandHandler {
             data2.Add("L", client.PlayerData.L);
             vl.Add(NetworkArray.StringParam("L", client.PlayerData.L));
         }
-
-        if (!Utils.VariablesValid(client))
-            return;
 
         data.Add("vl", vl);
 
