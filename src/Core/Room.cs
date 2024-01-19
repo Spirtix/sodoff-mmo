@@ -38,6 +38,12 @@ public class Room {
     }
 
     public static Room Get(string name) => rooms[name];
+    
+    public static Room GetOrAdd(string name) {
+        if (!Room.Exists(name))
+                Room.Add(name);
+        return rooms[name];
+    }
 
     public static bool Exists(string name) => rooms.ContainsKey(name);
 

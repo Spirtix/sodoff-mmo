@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using sodoffmmo.Data;
+
 namespace sodoffmmo.Core;
 internal static class Utils {
     public static bool VariablesValid(Client client) {
@@ -18,5 +20,33 @@ internal static class Utils {
                         return false;
         }
         return true;
+    }
+    
+    public static NetworkPacket VlNetworkPacket(NetworkArray vl2, int roomID) {
+        NetworkObject wedata = new();
+        NetworkArray vl = new();
+        vl.Add(vl2);
+        wedata.Add("r", roomID);
+        wedata.Add("vl", vl);
+        return NetworkObject.WrapObject(0, 11, wedata).Serialize();
+    }
+
+    public static NetworkPacket VlNetworkPacket(string a, string b) {
+        NetworkArray vl2 = new();
+        vl2.Add(a);
+        vl2.Add((Byte)4);
+        vl2.Add(b);
+        vl2.Add(false);
+        vl2.Add(false);
+        return VlNetworkPacket(vl2, WorldEvent.Get().GetRoom().Id);
+    }
+
+    public static NetworkPacket ArrNetworkPacket(string[] data) {
+        NetworkObject cmd = new();
+        NetworkObject obj = new();
+        obj.Add("arr", data);
+        cmd.Add("c", "");
+        cmd.Add("p", obj);
+        return NetworkObject.WrapObject(1, 13, cmd).Serialize();
     }
 }
