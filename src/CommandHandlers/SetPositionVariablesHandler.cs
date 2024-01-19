@@ -18,8 +18,7 @@ class SetPositionVariablesHandler : ICommandHandler {
         this.client = client;
         spvData = receivedObject;
         UpdatePositionVariables();
-        if (Utils.VariablesValid(client))
-            SendSPVCommand();
+        SendSPVCommand();
     }
 
     private void UpdatePositionVariables() {

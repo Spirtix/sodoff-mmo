@@ -1,4 +1,5 @@
-﻿using sodoffmmo.Core;
+﻿using System.Text.RegularExpressions;
+using sodoffmmo.Core;
 
 namespace sodoffmmo.Data;
 public class PlayerData {
@@ -61,8 +62,7 @@ public class PlayerData {
             return fp;
         }
         set {
-            fp = value;
-            string[] array = fp.Split('*');
+            string[] array = value.Split('*');
             Dictionary<string, string> keyValPairs = new();
             foreach (string str in array) {
                 string[] keyValPair = str.Split('$');
@@ -86,6 +86,14 @@ public class PlayerData {
             }
             if (keyValPairs.TryGetValue("U", out string userdata)) {
                 PetMounted = (userdata == "0");
+            }
+            if (PetMounted &&
+                (GeometryType == PetGeometryType.Default && PetAge < PetAge.Teen
+                || GeometryType == PetGeometryType.Terror && PetAge < PetAge.Titan)
+            ) {
+                fp = Regex.Replace(value, "^U\\$0\\*", "U$-1*");
+            } else {
+                fp = value;
             }
         }
     }
