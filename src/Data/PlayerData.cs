@@ -85,13 +85,13 @@ public class PlayerData {
                 }
             }
             if (keyValPairs.TryGetValue("U", out string userdata)) {
-                PetMounted = (userdata == "0");
+                PetMounted = (userdata == "0" || userdata == "1");
             }
             if (PetMounted &&
                 (GeometryType == PetGeometryType.Default && PetAge < PetAge.Teen
                 || GeometryType == PetGeometryType.Terror && PetAge < PetAge.Titan)
             ) {
-                fp = Regex.Replace(value, "^U\\$0\\*", "U$-1*");
+                fp = Regex.Replace(value, "^U\\$[01]\\*", "U$-1*");
             } else {
                 fp = value;
             }
