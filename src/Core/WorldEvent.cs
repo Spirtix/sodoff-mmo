@@ -1,11 +1,18 @@
 using System.Globalization;
 using sodoffmmo.Data;
+using System.Timers;
 
 namespace sodoffmmo.Core;
 class WorldEvent {
+    enum State {
+        Active,
+        End,
+        NotActive
+    }
     private static WorldEvent _instance = null;
     private object EventLock = new object();
     private Random random = new Random();
+    private System.Timers.Timer timer;
     
     public static WorldEvent Get() {
         if (_instance == null) {
@@ -15,44 +22,57 @@ class WorldEvent {
     }
     
     private WorldEvent() {
-        Reset(0.5f);
+        Reset(1.3f);
     }
     
-    private string uid;
     private Room room;
+    private string uid;
+    private Client operatorAI;
+    private State state;
+    
     private DateTime startTime;
     private DateTime endTime;
     private string startTimeString;
     private Dictionary<string, float> health;
     private Dictionary<Client, string> players;
-    private Client operatorAI;
     private DateTime AITime;
     private bool endTimeIsSet;
     
     private void Reset(float time) {
-        startTime = DateTime.UtcNow.AddMinutes(time);
-        startTimeString = startTime.ToString("MM/dd/yyyy HH:mm:ss");
-        uid = Path.GetRandomFileName().Substring(0, 8); // this is used as RandomSeed for random select ship variant
-        room = Room.GetOrAdd("HubTrainingDO");
-        endTime = startTime.AddMinutes(10);
-        endTimeIsSet = false;
-        operatorAI = null;
-        health = new();
-        players = new();
+        lock (EventLock) {
+            room = Room.GetOrAdd("HubTrainingDO");
+            uid = Path.GetRandomFileName().Substring(0, 8); // this is used as RandomSeed for random select ship variant
+            operatorAI = null;
+            state = State.NotActive;
+            
+            startTime = DateTime.UtcNow.AddMinutes(time);
+            startTimeString = startTime.ToString("MM/dd/yyyy HH:mm:ss");
+            AITime = startTime.AddMinutes(-1);
+            endTime = startTime.AddMinutes(10);
+            endTimeIsSet = false;
+            
+            Console.WriteLine($"Event {uid} start time: {startTimeString}");
+        }
     }
     
     private void InitEvent() {
         lock (EventLock) {
-            if (operatorAI is null || AITime < DateTime.UtcNow) {
+            if (AITime < DateTime.UtcNow) {
                 var clients = room.Clients.ToList();
                 operatorAI = clients[random.Next(0, clients.Count)];
                 AITime = DateTime.UtcNow.AddSeconds(3.5);
-            } else {
-                return;
+                
+                if (state == State.NotActive) {
+                    // clear here because after Reset() we can get late packages about previous events
+                    health = new();
+                    players = new();
+                    state = State.Active;
+                }
+                
+                operatorAI.Send(Utils.VlNetworkPacket("WE__AI", operatorAI.PlayerData.Uid));
+                Console.WriteLine($"Event {uid} AI operator: {operatorAI.PlayerData.Uid}");
             }
         }
-        operatorAI.Send(Utils.VlNetworkPacket("WE__AI", operatorAI.PlayerData.Uid));
-        Console.WriteLine($"Event AI operator: {operatorAI.PlayerData.Uid}");
     }
     
     private bool EndEvent(bool force = false) {
@@ -63,6 +83,12 @@ class WorldEvent {
             targets += x.Key + ":" + x.Value.ToString("0.0#####", CultureInfo.GetCultureInfo("en-US")) + ",";
         }
         if (results || force) {
+            lock (EventLock) {
+                if (state != State.Active)
+                    return true;
+                state = State.End;
+            }
+            
             string scores = "";
             foreach (var x in players) {
                 scores += x.Value + ",";
@@ -75,6 +101,8 @@ class WorldEvent {
             foreach (var roomClient in room.Clients) {
                 roomClient.Send(packet);
             }
+            
+            Console.WriteLine($"Event {uid} end: {results} {targets}");
             
             NetworkObject wedata = new();
             NetworkArray vl = new();
@@ -105,11 +133,32 @@ class WorldEvent {
             wedata.Add("vl", vl);
             packet = NetworkObject.WrapObject(0, 11, wedata).Serialize();
             
-            Reset(5);
+            foreach (var roomClient in room.Clients) {
+                roomClient.Send(packet);
+            }
+            
+            Reset(4);
+            
+            timer = new System.Timers.Timer(10000);
+            timer.Elapsed += PostEndEvent;
+            timer.AutoReset = false;
+            timer.Enabled = true;
+
             return true;
         }
         return false;
     }
+    
+    private void PostEndEvent(Object source, ElapsedEventArgs e) {
+        NetworkPacket packet = Utils.ArrNetworkPacket( new string[] {
+            "WESR",
+            "WE_ScoutAttack|" + EventInfo()
+        });
+        foreach (var roomClient in room.Clients) {
+            roomClient.Send(packet);
+        }
+    }
+
     
     public string EventInfo() {
         return startTimeString + "," + uid + ", false, HubTrainingDO";
@@ -125,6 +174,13 @@ class WorldEvent {
     
     public float UpdateHealth(string targetUid, float updateVal) {
         InitEvent(); // TODO better place for this
+        
+        lock (EventLock) {
+            if (state != State.Active) {
+                Console.WriteLine($"Event {uid} reject UpdateHealth for {targetUid} with event state {state}");
+                return -1.0f; // do not send WEH_ when event is not active
+            }
+        }
         
         if (!health.ContainsKey(targetUid))
             health.Add(targetUid, 1.0f);
@@ -159,6 +215,7 @@ class WorldEvent {
 
     public void SetTimeSpan(Client client, float seconds) {
         if (client == operatorAI || !endTimeIsSet) {
+            Console.WriteLine($"Event {uid} set TimeSpan: {seconds} from operator: {client == operatorAI}");
             endTime = startTime.AddSeconds(seconds);
             endTimeIsSet = true;
         }
