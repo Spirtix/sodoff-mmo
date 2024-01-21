@@ -12,7 +12,7 @@ class WorldEvent {
     private static WorldEvent _instance = null;
     private object EventLock = new object();
     private Random random = new Random();
-    private System.Timers.Timer timer;
+    private System.Timers.Timer timer = null;
     
     public static WorldEvent Get() {
         if (_instance == null) {
@@ -22,7 +22,7 @@ class WorldEvent {
     }
     
     private WorldEvent() {
-        Reset(1.3f);
+        Reset(3.3f);
     }
     
     private Room room;
@@ -52,7 +52,23 @@ class WorldEvent {
             endTimeIsSet = false;
             
             Console.WriteLine($"Event {uid} start time: {startTimeString}");
+            
+            ResetTimer((endTime - DateTime.UtcNow).TotalSeconds + 30);
         }
+    }
+    
+    private void ResetTimer(double timeout) {
+        if (timer != null) {
+            timer.Stop();
+            timer.Close();
+        }
+        
+        timer = new System.Timers.Timer(timeout * 1000);
+        timer.Elapsed += PostEndEvent;
+        timer.AutoReset = false;
+        timer.Enabled = true;
+        
+        Console.WriteLine($"Event {uid} reset timer set to {timeout} s");
     }
     
     private void InitEvent() {
@@ -69,7 +85,7 @@ class WorldEvent {
                     state = State.Active;
                 }
                 
-                operatorAI.Send(Utils.VlNetworkPacket("WE__AI", operatorAI.PlayerData.Uid));
+                operatorAI.Send(Utils.VlNetworkPacket("WE__AI", operatorAI.PlayerData.Uid, room.Id));
                 Console.WriteLine($"Event {uid} AI operator: {operatorAI.PlayerData.Uid}");
             }
         }
@@ -96,7 +112,8 @@ class WorldEvent {
             
             NetworkPacket packet = Utils.VlNetworkPacket(
                 "WE_ScoutAttack_End",
-                $"{uid};{results};{scores};{targets}"
+                $"{uid};{results};{scores};{targets}",
+                room.Id
             );
             foreach (var roomClient in room.Clients) {
                 roomClient.Send(packet);
@@ -104,7 +121,6 @@ class WorldEvent {
             
             Console.WriteLine($"Event {uid} end: {results} {targets}");
             
-            NetworkObject wedata = new();
             NetworkArray vl = new();
             NetworkArray vl1 = new();
             vl1.Add("WE__AI");
@@ -129,20 +145,13 @@ class WorldEvent {
                 vl3.Add(false);
                 vl.Add(vl3);
             }
-            wedata.Add("r", room.Id);
-            wedata.Add("vl", vl);
-            packet = NetworkObject.WrapObject(0, 11, wedata).Serialize();
-            
+            packet = Utils.VlNetworkPacket(vl, room.Id);
             foreach (var roomClient in room.Clients) {
                 roomClient.Send(packet);
             }
             
-            Reset(4);
-            
-            timer = new System.Timers.Timer(10000);
-            timer.Elapsed += PostEndEvent;
-            timer.AutoReset = false;
-            timer.Enabled = true;
+            // (re)schedule event reset and announcement of next event
+            ResetTimer(10);
 
             return true;
         }
@@ -150,12 +159,14 @@ class WorldEvent {
     }
     
     private void PostEndEvent(Object source, ElapsedEventArgs e) {
-        NetworkPacket packet = Utils.ArrNetworkPacket( new string[] {
-            "WESR",
-            "WE_ScoutAttack|" + EventInfo()
-        });
-        foreach (var roomClient in room.Clients) {
-            roomClient.Send(packet);
+        Reset(7);
+        
+        Console.WriteLine($"Event {uid} send event notification (WE_ + WEN_) to all clients");
+        NetworkPacket packet = Utils.VlNetworkPacket(EventInfoArray(), room.Id);
+        foreach (var r in Room.AllRooms()) {
+            foreach (var roomClient in r.Clients) {
+                roomClient.Send(packet);
+            }
         }
     }
 
@@ -164,8 +175,24 @@ class WorldEvent {
         return startTimeString + "," + uid + ", false, HubTrainingDO";
     }
     
-    public string EventInfoNext() {
-        return startTimeString; // TODO on og this was different time (real next event?)
+    public NetworkArray EventInfoArray(bool x = false) {
+        NetworkArray vl = new();
+        NetworkArray vl1 = new();
+        vl1.Add("WE_ScoutAttack");
+        vl1.Add((Byte)4);
+        vl1.Add(EventInfo());
+        vl1.Add(false);
+        vl1.Add(x);
+        vl.Add(vl1);
+        NetworkArray vl2 = new();
+        vl2.Add("WEN_ScoutAttack");
+        vl2.Add((Byte)4);
+        vl2.Add(startTimeString);
+        vl2.Add(false);
+        vl2.Add(x);
+        vl.Add(vl2);
+        
+        return vl;
     }
     
     public string GetUid() => uid;

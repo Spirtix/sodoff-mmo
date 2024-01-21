@@ -50,4 +50,8 @@ public class Room {
     public static void Add(string name) {
         rooms[name] = new Room(rooms.Count + 3, name);
     }
+    
+    public static Room[] AllRooms() {
+        return rooms.Values.ToArray();
+    }
 }

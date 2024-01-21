@@ -32,7 +32,8 @@ class WorldEventHealthHandler : ICommandHandler {
             // send: {"a":11,"c":0,"p":{"r":367256,"vl":[["WEH_ZydLUmCC1",4,"0.33133352,Thu Jun 22 02:02:43 UTC 2023",false,false]]}}
             NetworkPacket packet = Utils.VlNetworkPacket(
                 "WEH_" + targetUid,
-                health.ToString("0.0#####", CultureInfo.GetCultureInfo("en-US")) + "," + DateTime.UtcNow.ToString("ddd MMM dd HH:mm:ss UTC yyyy", CultureInfo.GetCultureInfo("en-US"))
+                health.ToString("0.0#####", CultureInfo.GetCultureInfo("en-US")) + "," + DateTime.UtcNow.ToString("ddd MMM dd HH:mm:ss UTC yyyy", CultureInfo.GetCultureInfo("en-US")),
+                WorldEvent.Get().GetRoom().Id
             );
             foreach (var roomClient in WorldEvent.Get().GetRoom().Clients) {
                 roomClient.Send(packet);
@@ -50,7 +51,8 @@ class WorldEventFlareHandler : ICommandHandler {
         // send: {"a":11,"c":0,"p":{"r":403777,"vl":[["WEF_WpnpDyJ51,14,0",4,"0,6/29/2023 3:03:18 AM",false,false]]}}
         NetworkPacket packet = Utils.VlNetworkPacket(
             "WEF_" + p.Get<string>("fuid"),
-            p.Get<string>("oh") + "," + p.Get<string>("ts")
+            p.Get<string>("oh") + "," + p.Get<string>("ts"),
+            WorldEvent.Get().GetRoom().Id
         );
         foreach (var roomClient in WorldEvent.Get().GetRoom().Clients) {
             roomClient.Send(packet);

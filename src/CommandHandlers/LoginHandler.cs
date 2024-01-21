@@ -27,26 +27,6 @@ class LoginHandler : ICommandHandler
         rl.Add(r1);
 
         NetworkArray r2 = new();
-
-        NetworkArray we = new();
-        NetworkArray we1 = new();
-        NetworkArray we2 = new();
-        
-        we1.Add("WE_ScoutAttack");
-        we1.Add((Byte)4);
-        we1.Add(WorldEvent.Get().EventInfo());
-        we1.Add(false);
-        we1.Add(true);
-        
-        we2.Add("WEN_ScoutAttack");
-        we2.Add((Byte)4);
-        we2.Add(WorldEvent.Get().EventInfoNext());
-        we2.Add(false);
-        we2.Add(true);
-        
-        we.Add(we1);
-        we.Add(we2);
-        
         r2.Add(1);
         r2.Add("ADMIN");
         r2.Add("default");
@@ -55,7 +35,7 @@ class LoginHandler : ICommandHandler
         r2.Add(true);
         r2.Add((short)0);
         r2.Add((short)1);
-        r2.Add(we);
+        r2.Add(WorldEvent.Get().EventInfoArray(true));
         rl.Add(r2);
 
         NetworkArray r3 = new();
