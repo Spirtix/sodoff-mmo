@@ -22,23 +22,23 @@ internal static class Utils {
         return true;
     }
     
-    public static NetworkPacket VlNetworkPacket(NetworkArray vl2, int roomID) {
-        NetworkObject wedata = new();
-        NetworkArray vl = new();
-        vl.Add(vl2);
-        wedata.Add("r", roomID);
-        wedata.Add("vl", vl);
-        return NetworkObject.WrapObject(0, 11, wedata).Serialize();
+    public static NetworkPacket VlNetworkPacket(NetworkArray vl, int roomID) {
+        NetworkObject obj = new();
+        obj.Add("r", roomID);
+        obj.Add("vl", vl);
+        return NetworkObject.WrapObject(0, 11, obj).Serialize();
     }
 
-    public static NetworkPacket VlNetworkPacket(string a, string b) {
+    public static NetworkPacket VlNetworkPacket(string a, string b, int roomID) {
+        NetworkArray vl = new();
         NetworkArray vl2 = new();
         vl2.Add(a);
         vl2.Add((Byte)4);
         vl2.Add(b);
         vl2.Add(false);
         vl2.Add(false);
-        return VlNetworkPacket(vl2, WorldEvent.Get().GetRoom().Id);
+        vl.Add(vl2);
+        return VlNetworkPacket(vl, roomID);
     }
 
     public static NetworkPacket ArrNetworkPacket(string[] data) {
