@@ -34,9 +34,11 @@ class WorldEvent {
     private DateTime endTime;
     private string startTimeString;
     private Dictionary<string, float> health;
-    private Dictionary<Client, string> players;
+    private Dictionary<string, string> players;
     private DateTime AITime;
     private bool endTimeIsSet;
+    
+    private string lastResults;
     
     private void Reset(float time) {
         lock (EventLock) {
@@ -53,7 +55,7 @@ class WorldEvent {
             
             Console.WriteLine($"Event {uid} start time: {startTimeString}");
             
-            ResetTimer((endTime - DateTime.UtcNow).TotalSeconds + 30);
+            ResetTimer((endTime - DateTime.UtcNow).TotalSeconds + 90);
         }
     }
     
@@ -82,6 +84,7 @@ class WorldEvent {
                     // clear here because after Reset() we can get late packages about previous events
                     health = new();
                     players = new();
+                    lastResults = "";
                     state = State.Active;
                 }
                 
@@ -107,19 +110,20 @@ class WorldEvent {
             
             string scores = "";
             foreach (var x in players) {
-                scores += x.Value + ",";
+                scores += x.Key + "/" + x.Value + ",";
             }
+            lastResults = $"{uid};{results};{scores};{targets}";
             
             NetworkPacket packet = Utils.VlNetworkPacket(
                 "WE_ScoutAttack_End",
-                $"{uid};{results};{scores};{targets}",
+                lastResults,
                 room.Id
             );
             foreach (var roomClient in room.Clients) {
                 roomClient.Send(packet);
             }
             
-            Console.WriteLine($"Event {uid} end: {results} {targets}");
+            Console.WriteLine($"Event {uid} end: {results} {targets} {scores}");
             
             NetworkArray vl = new();
             NetworkArray vl1 = new();
@@ -151,7 +155,7 @@ class WorldEvent {
             }
             
             // (re)schedule event reset and announcement of next event
-            ResetTimer(10);
+            ResetTimer(60);
 
             return true;
         }
@@ -215,19 +219,17 @@ class WorldEvent {
         
         if (health[targetUid] < 0) {
             health[targetUid] = 0.0f;
-            if (EndEvent())
-                return -1.0f;
+            EndEvent();
         }
         
         if (endTime < DateTime.UtcNow) {
             EndEvent(true);
-            return -1.0f;
         }
         
         return health[targetUid];
     }
     
-    public void UpdateScore(Client client, string value) {
+    public void UpdateScore(string client, string value) {
         if (!players.ContainsKey(client)) {
             players.Add(client, value);
         } else {
@@ -241,6 +243,9 @@ class WorldEvent {
     }
 
     public void SetTimeSpan(Client client, float seconds) {
+        if (state != State.Active) {
+            return;
+        }
         if (client == operatorAI || !endTimeIsSet) {
             Console.WriteLine($"Event {uid} set TimeSpan: {seconds} from operator: {client == operatorAI}");
             endTime = startTime.AddSeconds(seconds);
@@ -249,4 +254,12 @@ class WorldEvent {
     }
     
     public float GetHealth(string targetUid) => health[targetUid];
+    
+    public bool IsActive() {
+        return state == State.Active;
+    }
+    
+    public string GetLastResults() {
+       return lastResults;
+   }
 }
