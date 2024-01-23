@@ -25,6 +25,7 @@ class WorldEvent {
         Reset(3.3f);
     }
     
+    // controlled (init/reset) by Reset()
     private Room room;
     private string uid;
     private Client operatorAI;
@@ -33,12 +34,13 @@ class WorldEvent {
     private DateTime startTime;
     private DateTime endTime;
     private string startTimeString;
-    private Dictionary<string, float> health;
-    private Dictionary<string, string> players;
     private DateTime AITime;
     private bool endTimeIsSet;
     
-    private string lastResults;
+    // controlled (init/reset) by InitEvent()
+    private Dictionary<string, float> health = new();
+    private Dictionary<string, string> players = new();
+    private string lastResults = "";
     
     private void Reset(float time) {
         lock (EventLock) {
@@ -50,13 +52,18 @@ class WorldEvent {
             startTime = DateTime.UtcNow.AddMinutes(time);
             startTimeString = startTime.ToString("MM/dd/yyyy HH:mm:ss");
             AITime = startTime.AddMinutes(-1);
-            endTime = startTime.AddMinutes(10);
+            UpdateEndTime(600 + 90);
             endTimeIsSet = false;
             
             Console.WriteLine($"Event {uid} start time: {startTimeString}");
-            
-            ResetTimer((endTime - DateTime.UtcNow).TotalSeconds + 90);
         }
+    }
+    
+    private void UpdateEndTime(double timeout) {
+        endTime = startTime.AddSeconds(timeout);
+        Console.WriteLine($"Event {uid} end time: {endTime}");
+        ResetTimer((endTime - DateTime.UtcNow).TotalSeconds);
+        timer.Elapsed += PreEndEvent;
     }
     
     private void ResetTimer(double timeout) {
@@ -66,7 +73,6 @@ class WorldEvent {
         }
         
         timer = new System.Timers.Timer(timeout * 1000);
-        timer.Elapsed += PostEndEvent;
         timer.AutoReset = false;
         timer.Enabled = true;
         
@@ -94,16 +100,24 @@ class WorldEvent {
         }
     }
     
+    private void PreEndEvent(Object source, ElapsedEventArgs e) {
+        Console.WriteLine($"Event {uid} force end from timer");
+        EndEvent(true);
+    }
+    
     private bool EndEvent(bool force = false) {
-        bool results = true;
+        bool results = false;
         string targets = "";
-        foreach (var x in health) {
-            results = results && (x.Value == 0.0f);
-            targets += x.Key + ":" + x.Value.ToString("0.0#####", CultureInfo.GetCultureInfo("en-US")) + ",";
+        if (health.Count > 0) {
+            results = true;
+            foreach (var x in health) {
+                results = results && (x.Value == 0.0f);
+                targets += x.Key + ":" + x.Value.ToString("0.0#####", CultureInfo.GetCultureInfo("en-US")) + ",";
+            }
         }
         if (results || force) {
             lock (EventLock) {
-                if (state != State.Active)
+                if (state == State.End || (state == State.NotActive && !force))
                     return true;
                 state = State.End;
             }
@@ -156,6 +170,7 @@ class WorldEvent {
             
             // (re)schedule event reset and announcement of next event
             ResetTimer(60);
+            timer.Elapsed += PostEndEvent;
 
             return true;
         }
@@ -204,7 +219,7 @@ class WorldEvent {
     public Room GetRoom() => room;
     
     public float UpdateHealth(string targetUid, float updateVal) {
-        InitEvent(); // TODO better place for this
+        InitEvent();
         
         lock (EventLock) {
             if (state != State.Active) {
@@ -223,6 +238,7 @@ class WorldEvent {
         }
         
         if (endTime < DateTime.UtcNow) {
+            Console.WriteLine($"Event {uid} force end from UpdateHealth");
             EndEvent(true);
         }
         
@@ -248,7 +264,7 @@ class WorldEvent {
         }
         if (client == operatorAI || !endTimeIsSet) {
             Console.WriteLine($"Event {uid} set TimeSpan: {seconds} from operator: {client == operatorAI}");
-            endTime = startTime.AddSeconds(seconds);
+            UpdateEndTime(seconds);
             endTimeIsSet = true;
         }
     }
