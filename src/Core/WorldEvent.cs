@@ -22,7 +22,7 @@ class WorldEvent {
     }
     
     private WorldEvent() {
-        Reset(3.3f);
+        Reset(10);
     }
     
     // controlled (init/reset) by Reset()
@@ -178,7 +178,7 @@ class WorldEvent {
     }
     
     private void PostEndEvent(Object source, ElapsedEventArgs e) {
-        Reset(7);
+        Reset(30);
         
         Console.WriteLine($"Event {uid} send event notification (WE_ + WEN_) to all clients");
         NetworkPacket packet = Utils.VlNetworkPacket(EventInfoArray(), room.Id);
